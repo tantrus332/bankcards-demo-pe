@@ -12,7 +12,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        exclude: package\.lock\.json|\.env\.example
+        exclude: package\.lock\.json|\.env\.example|src/main/resources/application\.yml
 
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
     rev: v2.14.0

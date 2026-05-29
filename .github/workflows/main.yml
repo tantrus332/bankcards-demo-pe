@@ -55,7 +55,7 @@ jobs:
   notify:
     name: Notify Results
     runs-on: ubuntu-latest
-    if: always()
+    if: failure()
     needs: [security-audit]
     steps:
       - name: Send Telegram notification

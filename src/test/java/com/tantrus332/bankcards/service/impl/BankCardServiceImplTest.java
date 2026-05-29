@@ -122,7 +122,7 @@ class BankCardServiceImplTest {
             .thenReturn(Optional.of(toCard));
 
         // Ожидаем BusinessLogicException
-        assertThrows(BusinessLogicException.class, () -> 
+        assertThrows(BusinessLogicException.class, () ->
             bankCardService.transfer(fromCardNum, toCardNum, amount)
         );
 

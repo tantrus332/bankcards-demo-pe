@@ -25,7 +25,7 @@ public class DatabaseSeeder {
                     .role(UserRole.ADMIN)
                     .cardHolderName("FEDOR YAKUSHEV")
                     .build();
-                
+
                 admin = userRepository.save(admin);
             }
 

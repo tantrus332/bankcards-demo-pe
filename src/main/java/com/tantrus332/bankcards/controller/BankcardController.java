@@ -47,8 +47,8 @@ public class BankcardController {
     @Operation(summary = "Перевод с одной на другую карту")
     public TransferResponseDto transfer(@Validated @RequestBody TransferRequestDto requestDto) {
         return bankCardService.transfer(
-            requestDto.getFromCardNumber(), 
-            requestDto.getToCardNumber(), 
+            requestDto.getFromCardNumber(),
+            requestDto.getToCardNumber(),
             requestDto.getAmount()
         );
     }

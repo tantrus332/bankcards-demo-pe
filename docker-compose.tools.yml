@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  pre-commit:
+    image: python:3.11
+    environment:
+      - HTTP_PROXY=http://host.docker.internal:39353
+      - HTTPS_PROXY=http://host.docker.internal:39353
+    # Устанавливаем pre-commit, настраиваем права Git на смонтированную папку (важно для Windows)
+    # и запускаем хуки.
+    command: >
+      bash -c "pip install pre-commit
+      && git config --global --add safe.directory /workdir
+      && pre-commit run --all-files"
+    volumes:
+      # Монтируем директорию проекта внутрь контейнера
+      - .:/workdir
+      # Сохраняем кэш pre-commit между запусками, чтобы не скачивать хуки каждый раз
+      - pre-commit-cache:/root/.cache/pre-commit
+    working_dir: /workdir
+
+volumes:
+  pre-commit-cache:

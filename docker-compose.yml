@@ -25,8 +25,8 @@ services:
     command: mvn -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005" spring-boot:run
     working_dir: /workspace
     volumes:
-      - ./:/workspace               
-      - maven-repo:/root/.m2  
+      - ./:/workspace
+      - maven-repo:/root/.m2
       - ./logs:/workspace/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:${DB_PORT}/${POSTGRES_DB}

@@ -32,15 +32,15 @@ class AttributeEncryptorTest {
         assertNotNull(encryptedData);
         assertNotEquals(originalData, encryptedData, "Зашифрованные данные не должны совпадать с исходными");
 
-        System.out.println("Encrypted output: " + encryptedData); 
+        System.out.println("Encrypted output: " + encryptedData);
     }
 
     @Test
     void convertToEntityAttribute_ShouldDecryptData() {
         String originalData = "4444555566667777";
-        
+
         String encryptedData = encryptor.convertToDatabaseColumn(originalData);
-        
+
         String decryptedData = encryptor.convertToEntityAttribute(encryptedData);
 
         assertEquals(originalData, decryptedData, "Расшифрованные данные должны совпадать с исходными");
@@ -48,7 +48,7 @@ class AttributeEncryptorTest {
 
     @Test
     void encryption_ShouldFail_WithWrongKeyLength() {
-        securityProperties.setEncryptionKey("short"); 
+        securityProperties.setEncryptionKey("short");
         AttributeEncryptor badEncryptor = new AttributeEncryptor(securityProperties);
 
         assertThrows(RuntimeException.class, () -> {

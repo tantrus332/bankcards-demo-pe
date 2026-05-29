@@ -64,7 +64,7 @@ public class BankCardServiceImpl implements BankCardService {
         String cardNumber;
         do {
             cardNumber = "4000" + String.format(
-                "%012d", 
+                "%012d",
                 new java.util.Random().nextLong(100000000000L)
             );
         } while(bankCardRepository.existsByCardNumber(cardNumber));
@@ -131,7 +131,7 @@ public class BankCardServiceImpl implements BankCardService {
     public BankCardDto confirmBlock(Long cardId) {
         BankCard bankCard = bankCardRepository.findById(cardId)
             .orElseThrow(() -> new ResourceNotFoundException("Card with id " + cardId + " not found"));
-        
+
         bankCard.setActivatedAt(null);
         bankCard.setBlockRequestedAt(null);
         bankCard = bankCardRepository.save(bankCard);
@@ -160,7 +160,7 @@ public class BankCardServiceImpl implements BankCardService {
     public BankCardDto activate(Long cardId) {
         BankCard bankCard = bankCardRepository.findById(cardId)
             .orElseThrow(() -> new ResourceNotFoundException("Bank card with id " + cardId + " not found"));
-        
+
         bankCard.setActivatedAt(OffsetDateTime.now());
         bankCard = bankCardRepository.save(bankCard);
 

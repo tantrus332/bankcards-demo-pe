@@ -1,13 +1,10 @@
 package com.tantrus332.bankcards;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 // @SpringBootTest
 class BankcardsApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+  @Test
+  void contextLoads() {}
 }

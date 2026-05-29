@@ -1,7 +1,6 @@
 package com.tantrus332.bankcards.dto;
 
 import com.tantrus332.bankcards.util.UserRole;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -14,15 +13,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserStoreDto {
-    @NotBlank(message = "Username is required")
-    private String username;
+  @NotBlank(message = "Username is required")
+  private String username;
 
-    @NotBlank(message = "Card holder name is required")
-    private String cardHolderName;
+  @NotBlank(message = "Card holder name is required")
+  private String cardHolderName;
 
-    @NotNull(message = "Role is required")
-    private UserRole role;
+  @NotNull(message = "Role is required")
+  private UserRole role;
 
-    @NotBlank(message = "Password is required")
-    private String password;
+  @NotBlank(message = "Password is required")
+  private String password;
 }

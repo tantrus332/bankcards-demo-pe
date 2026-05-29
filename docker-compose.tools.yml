@@ -6,16 +6,14 @@ services:
     environment:
       - HTTP_PROXY=http://host.docker.internal:39353
       - HTTPS_PROXY=http://host.docker.internal:39353
-    # Устанавливаем pre-commit, настраиваем права Git на смонтированную папку (важно для Windows)
-    # и запускаем хуки.
+    # Добавили apt-get update && apt-get install -y default-jre для установки Java
     command: >
-      bash -c "pip install pre-commit
+      bash -c "apt-get update && apt-get install -y default-jre
+      && pip install pre-commit
       && git config --global --add safe.directory /workdir
       && pre-commit run --all-files"
     volumes:
-      # Монтируем директорию проекта внутрь контейнера
       - .:/workdir
-      # Сохраняем кэш pre-commit между запусками, чтобы не скачивать хуки каждый раз
       - pre-commit-cache:/root/.cache/pre-commit
     working_dir: /workdir
 

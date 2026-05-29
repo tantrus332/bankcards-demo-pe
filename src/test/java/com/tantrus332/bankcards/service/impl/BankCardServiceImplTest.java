@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tantrus332.bankcards.entity.BankCard;
+import com.tantrus332.bankcards.entity.User;
 import com.tantrus332.bankcards.exception.BusinessLogicException;
 import com.tantrus332.bankcards.repository.BankCardRepository;
 import com.tantrus332.bankcards.service.UserService;
@@ -27,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import com.tantrus332.bankcards.entity.User;
 
 @ExtendWith(MockitoExtension.class)
 class BankCardServiceImplTest {

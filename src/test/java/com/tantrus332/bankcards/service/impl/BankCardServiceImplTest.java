@@ -63,7 +63,11 @@ class BankCardServiceImplTest {
     String toCardNum = "2222";
     BigDecimal amount = new BigDecimal("100.00");
 
+    User mockUser = new User();
+    mockUser.setCardHolderName("Ivan Ivanov");
+
     BankCard fromCard = new BankCard();
+    fromCard.setUser(mockUser);
     fromCard.setId(1L);
     fromCard.setBalance(new BigDecimal("1000.00"));
     fromCard.setActivatedAt(java.time.OffsetDateTime.now()); // Активна
@@ -71,6 +75,7 @@ class BankCardServiceImplTest {
     fromCard.setExpirationMonth(12);
 
     BankCard toCard = new BankCard();
+    toCard.setUser(mockUser);
     toCard.setId(2L);
     toCard.setBalance(new BigDecimal("500.00"));
     toCard.setActivatedAt(java.time.OffsetDateTime.now());

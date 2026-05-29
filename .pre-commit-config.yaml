@@ -12,11 +12,11 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
         exclude: package.lock.json
 
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.9.0
+    rev: v2.14.0
     hooks:
       - id: pretty-format-java
         args: [--autofix]
+        additional_dependencies: ['setuptools']

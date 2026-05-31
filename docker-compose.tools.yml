@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   pre-commit:
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
     image: python:3.11
     environment:
       - HTTP_PROXY=http://host.docker.internal:39353

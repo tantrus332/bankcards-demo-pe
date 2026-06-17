@@ -1,0 +1,235 @@
+name: "CI Security Pipeline (DevSecOps)"
+
+# Данный workflow расширяет основной ci.yml из ДЗ 202/205,
+# добавляя этапы безопасности, специфичные для ДЗ 207:
+#   - Image Scanning (Trivy по Docker-образу)
+#   - SCA: Filesystem (Trivy по зависимостям)
+#   - SBOM Generation (Syft)
+#   - Secret Detection (Gitleaks с полной историей)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:    # Ручной запуск
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ====================================================================
+  # 1. SCA: сканирование зависимостей (Trivy FS)
+  # Блокирует PR при обнаружении Critical CVE
+  # ====================================================================
+  sca-scan-fs:
+    name: "SCA - Trivy Filesystem (dependencies)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan (table)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+          ignore-unfixed: true
+          output: "trivy-fs-report.txt"
+
+      - name: Save Trivy JSON report
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "json"
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          ignore-unfixed: true
+          output: "artifacts/trivy-fs-report.json"
+
+      - name: Upload Trivy FS report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-report
+          path: artifacts/trivy-fs-report.json
+          retention-days: 30
+
+  # ====================================================================
+  # 2. SBOM Generation (Syft, формат CycloneDX)
+  # ====================================================================
+  sbom-generation:
+    name: "SBOM Generation (Syft / CycloneDX)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: "."
+          format: "cyclonedx-json"
+          output-file: "artifacts/sbom.json"
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: artifacts/sbom.json
+          retention-days: 90
+
+  # ====================================================================
+  # 3. Image Scanning: Trivy по собранному Docker-образу
+  # Запускается только для push в main (после успешной сборки)
+  # ====================================================================
+  image-scan:
+    name: "Image Scan - Trivy (Docker image)"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build Docker image (только для сканирования, не публикуем)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ${{ secrets.DOCKER_USERNAME }}/bankcards-demo-pe-app:${{ github.sha }}
+          load: true
+
+      - name: Trivy image scan (table) - fail on Critical/High
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ secrets.DOCKER_USERNAME }}/bankcards-demo-pe-app:${{ github.sha }}"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+          ignore-unfixed: true
+          output: "trivy-image-report.txt"
+
+      - name: Save Trivy image JSON report
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ secrets.DOCKER_USERNAME }}/bankcards-demo-pe-app:${{ github.sha }}"
+          format: "json"
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          ignore-unfixed: true
+          output: "artifacts/trivy-image-report.json"
+
+      - name: Upload Trivy image report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-report
+          path: artifacts/trivy-image-report.json
+          retention-days: 30
+
+  # ====================================================================
+  # 4. Secret Detection: Gitleaks по полной истории коммитов
+  # Блокирует PR при обнаружении любых секретов
+  # ====================================================================
+  secret-detection:
+    name: "Secret Detection - Gitleaks (full history)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: ./gitleaks.toml
+        with:
+          config-path: gitleaks.toml
+          report-path: artifacts/gitleaks-report.json
+          verbose: true
+          redact: false
+
+      - name: Upload Gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: artifacts/gitleaks-report.json
+          retention-days: 90
+
+  # ====================================================================
+  # 5. Security Gate: финальная проверка, что все security-джобы прошли
+  # ====================================================================
+  security-gate:
+    name: "Security Gate (consolidated)"
+    runs-on: ubuntu-latest
+    needs:
+      - sca-scan-fs
+      - secret-detection
+      - sbom-generation
+    if: always()
+    steps:
+      - name: Evaluate security gate
+        run: |
+          echo "=== Security Gate Evaluation ==="
+          echo "SCA FS:                ${{ needs.sca-scan-fs.result }}"
+          echo "Secret Detection:      ${{ needs.secret-detection.result }}"
+          echo "SBOM Generation:       ${{ needs.sbom-generation.result }}"
+
+          # Критические этапы: SCA + Secret Detection
+          if [ "${{ needs.sca-scan-fs.result }}" = "failure" ] || \
+             [ "${{ needs.secret-detection.result }}" = "failure" ]; then
+            echo ""
+            echo "SECURITY GATE FAILED"
+            echo "Critical vulnerabilities OR secrets detected."
+            exit 1
+          fi
+
+          echo ""
+          echo "SECURITY GATE PASSED"
+          echo "All critical security checks completed successfully."
+
+  # ====================================================================
+  # 6. Опционально: scan уже опубликованного образа из Docker Hub
+  # (для ручной проверки последнего stable-релиза)
+  # ====================================================================
+  image-scan-latest:
+    name: "Image Scan - Trivy (Docker Hub: latest)"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Trivy scan: tantrus/bankcards-demo-pe-app:latest
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "tantrus/bankcards-demo-pe-app:latest"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          output: "trivy-image-latest.txt"
+
+      - name: Save Trivy latest report (JSON)
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "tantrus/bankcards-demo-pe-app:latest"
+          format: "json"
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          ignore-unfixed: true
+          output: "artifacts/trivy-image-report.json"

@@ -12,21 +12,47 @@ import com.tantrus332.bankcards.repository.BankCardRepository;
 import com.tantrus332.bankcards.service.BankCardService;
 import com.tantrus332.bankcards.service.UserService;
 import com.tantrus332.bankcards.util.BankCardStatus;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class BankCardServiceImpl implements BankCardService {
   private final BankCardRepository bankCardRepository;
   private final UserService userService;
+  private final MeterRegistry meterRegistry;
+
+  private Counter cardsCreatedCounter;
+  private Counter cardsBlockedCounter;
+  private Counter transfersCounter;
+  private DistributionSummary transferAmount;
+
+  @PostConstruct
+  public void init() {
+    cardsCreatedCounter = Counter.builder("bankcards_cards_created_total")
+        .description("Total cards created")
+        .register(meterRegistry);
+    cardsBlockedCounter = Counter.builder("bankcards_cards_blocked_total")
+        .description("Total cards blocked")
+        .register(meterRegistry);
+    transfersCounter = Counter.builder("bankcards_transfers_total")
+        .description("Total transfers")
+        .register(meterRegistry);
+    transferAmount = DistributionSummary.builder("bankcards_transfer_amount")
+        .description("Transfer amount")
+        .register(meterRegistry);
+  }
 
   @Override
   public BankCardDto get(Long id) {
@@ -54,6 +80,7 @@ public class BankCardServiceImpl implements BankCardService {
     bankCard.setFullCardNumber(generateRandomCardNumber());
 
     bankCard = bankCardRepository.save(bankCard);
+    cardsCreatedCounter.increment();
     return new BankCardDto(bankCard);
   }
 
@@ -138,6 +165,7 @@ public class BankCardServiceImpl implements BankCardService {
     bankCard.setActivatedAt(null);
     bankCard.setBlockRequestedAt(null);
     bankCard = bankCardRepository.save(bankCard);
+    cardsBlockedCounter.increment();
 
     return new BankCardDto(bankCard);
   }
@@ -197,6 +225,8 @@ public class BankCardServiceImpl implements BankCardService {
 
     bankCardRepository.save(fromCard);
     bankCardRepository.save(toCard);
+    transfersCounter.increment();
+    transferAmount.record(amount.doubleValue());
 
     return new TransferResponseDto(fromCard, toCard);
   }

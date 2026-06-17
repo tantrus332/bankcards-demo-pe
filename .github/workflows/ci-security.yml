@@ -157,7 +157,31 @@ jobs:
           path: artifacts/gitleaks-report.json
           retention-days: 90
 
-  # 4. Security Gate
+  # 4. SBOM Generation
+  sbom-generation:
+    name: "SBOM Generation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create artifacts directory
+        run: mkdir -p artifacts
+
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          path: "."
+          format: "cyclonedx-json"
+          output-file: "artifacts/sbom.json"
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: artifacts/sbom.json
+          retention-days: 90
+
+  # 5. Security Gate
   security-gate:
     name: "Security Gate"
     runs-on: ubuntu-latest

@@ -215,7 +215,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     steps:
-      - name: Trivy scan: tantrus/bankcards-demo-pe-app:latest
+      - name: "Trivy scan: tantrus/bankcards-demo-pe-app:latest"
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "tantrus/bankcards-demo-pe-app:latest"

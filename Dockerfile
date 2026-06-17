@@ -14,6 +14,8 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
+RUN apk upgrade --no-cache
+
 # Создаем непривилегированного пользователя для безопасности (Best Practice)
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
